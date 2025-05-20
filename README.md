@@ -33,11 +33,24 @@ The server supports the following domains with specialized persona pairs:
 - **Visual Design**: UI Minimalist vs Feature-Rich Designer, Brand Identity Expert vs User-Centered Designer, etc.
 - **Product Strategy**: Customer Advocate vs Business Strategist, Innovative Disruptor vs Market Researcher, etc.
 
-## Usage
+## Installation and Setup
 
-### Running the Server
+See [INSTALLATION.md](INSTALLATION.md) for detailed instructions on:
+- Setting up the Counter-Pose MCP server
+- Integrating with Claude Desktop
+- Integrating with Cursor IDE
+- Troubleshooting common issues
+
+### Quick Start
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/counter-pose-mcp.git
+cd counter-pose-mcp
+
+# Run the setup script
+./setup.sh
+
 # Run the server
 ./run_server.sh
 
@@ -45,7 +58,7 @@ The server supports the following domains with specialized persona pairs:
 ./test_client.sh
 ```
 
-### Available Tools
+## Available Tools
 
 The server provides the following tools:
 
