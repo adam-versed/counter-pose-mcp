@@ -8,15 +8,18 @@ from typing import Dict, List, Tuple, Optional, Any
 class UsageLogger:
     """Logger for counter-pose tool usage and statistics."""
     
-    def __init__(self, log_file="counter_pose_usage.log"):
+    def __init__(self, log_file="/tmp/counter_pose_usage.log"):
         self.log_file = log_file
     
     def log_usage(self, session_id: str, domain: str, persona: str, 
                  step: str, reasoning_length: int) -> None:
         """Log usage of the counter-pose reasoning validator."""
         timestamp = datetime.now().isoformat()
-        with open(self.log_file, "a") as f:
-            f.write(f"{timestamp},{session_id},{domain},{persona},{step},{reasoning_length}\n")
+        try:
+            with open(self.log_file, "a") as f:
+                f.write(f"{timestamp},{session_id},{domain},{persona},{step},{reasoning_length}\n")
+        except OSError:
+            pass  # Optionally, print a warning or log to console
 
 
 class CounterPoseSession:
@@ -85,16 +88,17 @@ class CounterPoseTool:
         """Load predefined persona pairs for each domain."""
         return {
             "software_development": [
-                ("Developer", "Security Expert"),
+                ("Developer", "Solution Architect"),
                 ("Frontend Engineer", "UX Designer"),
+                ("Solution Architect", "Security Expert"),
                 ("Performance Optimizer", "Maintainability Advocate"),
-                ("Startup CTO", "Enterprise Architect")
+                ("Solution Architect", "Startup CTO")
             ],
             "digital_marketing": [
                 ("Creative Director", "Analytics Specialist"),
                 ("Brand Strategist", "Conversion Optimizer"),
-                ("Social Media Expert", "SEO Specialist"),
-                ("Traditional Marketer", "Growth Hacker")
+                ("Social Media Expert", "Growth Hacker"),
+                ("Landing Page Expert", "SEO Specialist")
             ],
             "visual_design": [
                 ("UI Minimalist", "Feature-Rich Designer"),
@@ -202,7 +206,7 @@ class CounterPoseTool:
         
         # Provide guidance based on persona type
         persona_guidance = {
-            "developer": "Focus on implementation feasibility, scalability, and technical debt",
+            "developer": "Focus on implementation feasibility, component design, and technical debt",
             "security expert": "Focus on security vulnerabilities, data privacy, and regulatory compliance",
             "frontend engineer": "Focus on frontend architecture, component design, and user interface implementation",
             "ux designer": "Focus on user experience, accessibility, and usability",
@@ -217,23 +221,23 @@ class CounterPoseTool:
         guidance = persona_guidance.get(persona.lower(), "Consider the perspective's unique expertise")
         
         return f"""
-As {persona}, critique the reasoning from your specific perspective.
+            As {persona}, critique the reasoning from your specific perspective.
 
-{guidance}
+            {guidance}
 
-Identify:
-1. Key claims that need examination
-2. Potential blind spots or unconsidered factors
-3. Logical contradictions or tensions
-4. Alternative approaches worth considering
+            Identify:
+            1. Key claims that need examination
+            2. Potential blind spots or unconsidered factors
+            3. Logical contradictions or tensions
+            4. Alternative approaches worth considering
 
-Format your critique as:
+            Format your critique as:
 
-{icon} {persona.upper()}'s CRITIQUE:
-<Your critique here>
+            {icon} {persona.upper()}'s CRITIQUE:
+            <Your critique here>
 
-END CRITIQUE
-"""
+            END CRITIQUE
+            """
     
     def submit_critique(self, session_id: str, persona: str, critique: str) -> Dict:
         """Submit a critique from a specific persona."""
@@ -297,34 +301,34 @@ END CRITIQUE
     def _get_synthesis_format(self, session: CounterPoseSession) -> str:
         """Get formatting guidance for the synthesis step."""
         return f"""
-SYNTHESIS OF PERSPECTIVES:
+            SYNTHESIS OF PERSPECTIVES:
 
-After considering the critiques from {" and ".join(session.personas)}, synthesize a balanced recommendation.
+            After considering the critiques from {" and ".join(session.personas)}, synthesize a balanced recommendation.
 
-Your synthesis should:
-1. Identify key blind spots raised by each perspective
-2. Note any contradictions between perspectives
-3. Provide a confidence assessment (High/Medium/Low)
-4. Recommend whether changes are needed to the original reasoning
-5. Offer specific recommendations for improvement
+            Your synthesis should:
+            1. Identify key blind spots raised by each perspective
+            2. Note any contradictions between perspectives
+            3. Provide a confidence assessment (High/Medium/Low)
+            4. Recommend whether changes are needed to the original reasoning
+            5. Offer specific recommendations for improvement
 
-Format your synthesis as:
+            Format your synthesis as:
 
-BLIND SPOTS IDENTIFIED:
-<List of blind spots>
+            BLIND SPOTS IDENTIFIED:
+            <List of blind spots>
 
-CONTRADICTIONS FOUND:
-<List of contradictions>
+            CONTRADICTIONS FOUND:
+            <List of contradictions>
 
-CONFIDENCE: <High/Medium/Low>
+            CONFIDENCE: <High/Medium/Low>
 
-CHANGES NEEDED: <Yes/No>
+            CHANGES NEEDED: <Yes/No>
 
-RECOMMENDATION:
-<Your synthesized recommendation>
+            RECOMMENDATION:
+            <Your synthesized recommendation>
 
-END SYNTHESIS
-"""
+            END SYNTHESIS
+            """
     
     def submit_synthesis(self, session_id: str, synthesis: str) -> Dict:
         """Submit the final synthesis for a session."""
