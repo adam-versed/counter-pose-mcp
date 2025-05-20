@@ -9,30 +9,31 @@ counter_pose = CounterPoseTool()
 # Name the FastMCP instance 'mcp' to make it discoverable by the CLI
 mcp = FastMCP(
     title="Counter-Pose MCP Server",
-    description="An MCP server implementing the RPT (Reasoning-through-Perspective-Transition) technique",
+    description="An MCP server implementing the RPT (Reasoning-through-Perspective-Transition) technique for validating LLM reasoning",
 )
 
 
 @mcp.tool()
-def counter_pose(query: str, show_full_process: bool = False) -> dict:
-    """Process a query using the Counter-Pose RPT technique.
+def validate_reasoning(reasoning: str) -> dict:
+    """Validate an LLM's reasoning process using the Counter-Pose RPT technique.
     
-    The Counter-Pose tool implements the Reasoning-through-Perspective-Transition (RPT) prompting
-    technique that improves AI responses by introducing deliberate perspective conflict.
+    The Counter-Pose tool implements the Reasoning-through-Perspective-Transition (RPT) technique
+    to critique and validate reasoning by examining it from multiple domain-specific perspectives.
+    It identifies blind spots, potential contradictions, and provides feedback on whether the
+    reasoning should be adjusted.
     
     Args:
-        query: The question or problem to analyze from multiple perspectives
-        show_full_process: Whether to show the detailed debate process (default: False)
+        reasoning: The LLM's thought process or reasoning to validate
         
     Returns:
-        A dictionary containing either just the synthesized answer (default) or the full
-        process including each persona's perspective and the final synthesis.
+        A dictionary containing domain information, persona-based critiques, and a synthesis
+        of feedback including confidence assessment and recommended changes.
     """
-    return counter_pose.process_query(query, show_full_process)
+    return counter_pose.validate_reasoning(reasoning)
 
 
 @mcp.tool()
-def get_counter_pose_domains() -> dict:
+def get_domains() -> dict:
     """Get the available domains and their keywords.
     
     Returns:
@@ -42,7 +43,7 @@ def get_counter_pose_domains() -> dict:
 
 
 @mcp.tool()
-def get_counter_pose_personas() -> dict:
+def get_personas() -> dict:
     """Get the available persona pairs for each domain.
     
     Returns:
@@ -52,11 +53,11 @@ def get_counter_pose_personas() -> dict:
 
 
 @mcp.tool()
-def get_counter_pose_templates() -> dict:
-    """Get example templates for using the Counter-Pose tool.
+def get_templates() -> dict:
+    """Get example templates for reasoning validation.
     
     Returns:
-        A dictionary of example use cases with sample queries and outputs
+        A dictionary of example reasoning scenarios with sample outputs
     """
     return counter_pose.get_example_templates()
 

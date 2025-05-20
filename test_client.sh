@@ -1,36 +1,34 @@
 #!/bin/bash
 
-# Simple test client for the Counter-Pose MCP Server
+# Test client for the Counter-Pose MCP Reasoning Validator
 
-echo "Testing the Counter-Pose MCP Server"
-echo "===================================="
+echo "Testing the Counter-Pose MCP Reasoning Validator"
+echo "==============================================="
 
-# Test the counter_pose tool with a simple query
-echo -e "\nExample 1: Simple query (synthesis only)"
+# Test the validate_reasoning tool with a software development example
+echo -e "\nExample 1: Software Development Reasoning"
 echo '{
   "jsonrpc": "2.0",
   "id": 1,
   "method": "callTool",
   "params": {
-    "name": "counter_pose",
+    "name": "validate_reasoning",
     "arguments": {
-      "query": "How should I implement authentication in my web app?",
-      "show_full_process": false
+      "reasoning": "I need to implement authentication for our web application. I think we should use JWT tokens since they are stateless and work well with modern frontend frameworks. We can set the expiration time to 24 hours and store the tokens in local storage. This approach will be easy to implement and maintain."
     }
   }
 }' | nc -U /tmp/mcp.sock
 
-# Test the counter_pose tool with a more detailed query
-echo -e "\nExample 2: Detailed query (full process)"
+# Test with a digital marketing example
+echo -e "\nExample 2: Digital Marketing Reasoning"
 echo '{
   "jsonrpc": "2.0",
   "id": 2,
   "method": "callTool",
   "params": {
-    "name": "counter_pose",
+    "name": "validate_reasoning",
     "arguments": {
-      "query": "Should I focus on SEO or paid ads for my new SaaS product?",
-      "show_full_process": true
+      "reasoning": "For our upcoming product launch, I plan to focus heavily on social media marketing. We'll create engaging content across Instagram, Twitter, and TikTok, featuring influencer partnerships. Our messaging will emphasize the innovative features and lifestyle benefits of the product."
     }
   }
 }' | nc -U /tmp/mcp.sock
@@ -42,7 +40,7 @@ echo '{
   "id": 3,
   "method": "callTool",
   "params": {
-    "name": "get_counter_pose_domains",
+    "name": "get_domains",
     "arguments": {}
   }
 }' | nc -U /tmp/mcp.sock
@@ -54,7 +52,7 @@ echo '{
   "id": 4,
   "method": "callTool",
   "params": {
-    "name": "get_counter_pose_templates",
+    "name": "get_templates",
     "arguments": {}
   }
 }' | nc -U /tmp/mcp.sock
