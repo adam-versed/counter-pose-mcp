@@ -1,20 +1,24 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "mcp-server"
+name = "counter-pose-mcp"
 version = "0.1.0"
-description = "A FastMCP server for exploring scraper content"
+description = "Counter-Pose MCP Server: A reasoning validator using the RPT technique"
 readme = "README.md"
-requires-python = ">=3.11"
-license = {text = "Proprietary"}
+requires-python = ">=3.8"
+license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Adam Jackson", email = "example@example.com"},
 ]
 
 dependencies = [
-    "fastmcp",
+    "fastapi>=0.68.0",
+    "uvicorn>=0.15.0",
+    "pydantic>=1.8.2",
+    "jsonrpcserver>=5.0.0",
+    "websockets>=10.0",
 ]
 
 [project.optional-dependencies]
@@ -28,14 +32,14 @@ dev = [
 
 [tool.black]
 line-length = 100
-target-version = ["py311"]
+target-version = ["py38"]
 
 [tool.isort]
 profile = "black"
 line_length = 100
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -44,7 +48,7 @@ mypy_path = "typings"
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py38"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "N", "UP", "ANN"]
