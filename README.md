@@ -78,13 +78,6 @@ The server supports the following domains with specialized persona pairs:
 
 ## Installation and Setup
 
-See [INSTALLATION.md](INSTALLATION.md) for detailed instructions on:
-
-- Setting up the Counter-Pose MCP server
-- Integrating with Claude Desktop
-- Integrating with Cursor IDE
-- Troubleshooting common issues
-
 ### Quick Start
 
 ```bash
@@ -100,6 +93,19 @@ cd counter-pose-mcp
 
 # In another terminal, test the server
 ./test_client.sh
+```
+
+### cursor / claude installation:
+
+```json
+"counter-pose": {
+      "command": "/pathtoyourclonedrepo/counter-pose-mcp/.venv/bin/python",
+      "args": ["-m", "src.mcp_server.main"],
+      "cwd": "/pathtoyourclonedrepo/counter-pose-mcp",
+      "env": {
+        "PYTHONPATH": "/pathtoyourclonedrepo/counter-pose-mcp"
+      }
+    }
 ```
 
 ### Testing
