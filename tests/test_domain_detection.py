@@ -18,29 +18,40 @@ def test_domain_detection():
         ("Should I launch an MVP or wait for a more polished product?", "product_strategy")
     ]
     
+    print("TESTING DOMAIN DETECTION")
+    print("=" * 40)
+    
+    all_passed = True
     for query, expected_domain in test_cases:
-        detected_domain = tool._determine_domain(query)
-        print(f"Query: '{query}'")
-        print(f"Expected domain: {expected_domain}")
-        print(f"Detected domain: {detected_domain}")
-        print(f"Match: {'✅' if detected_domain == expected_domain else '❌'}")
-        print("-" * 50)
-        
-    # Test persona selection for each domain
-    for domain in tool.persona_pairs.keys():
-        personas = tool._select_persona_pair(domain)
-        print(f"Domain: {domain}")
-        print(f"Selected personas: {personas[0]} vs {personas[1]}")
+        detected_domain = tool.determine_domain(query)
+        match = detected_domain == expected_domain
+        if not match:
+            all_passed = False
+            
+        print(f"Query: '{query[:50]}...'")
+        print(f"Expected: {expected_domain}")
+        print(f"Detected: {detected_domain}")
+        print(f"Match: {'✅' if match else '❌'}")
         print("-" * 50)
     
-    # Test example templates
-    templates = tool.get_example_templates()
-    print("Example Templates:")
-    for template_name, template_data in templates.items():
-        print(f"Template: {template_name}")
-        print(f"Query: {template_data['query']}")
-        print(f"Personas: {' vs '.join(template_data['personas'])}")
+    # Test persona pair availability for each domain
+    print("\nTESTING PERSONA PAIRS AVAILABILITY")
+    print("=" * 40)
+    
+    for domain in tool.persona_pairs.keys():
+        pairs = tool.persona_pairs[domain]
+        print(f"Domain: {domain}")
+        print(f"Available pairs ({len(pairs)}):")
+        for i, (persona1, persona2) in enumerate(pairs, 1):
+            print(f"  {i}. {persona1} vs {persona2}")
         print("-" * 50)
+    
+    return all_passed
 
 if __name__ == "__main__":
-    test_domain_detection()
+    success = test_domain_detection()
+    if success:
+        print("\n✅ All domain detection tests passed!")
+    else:
+        print("\n❌ Some domain detection tests failed!")
+        sys.exit(1)

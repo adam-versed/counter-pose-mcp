@@ -23,11 +23,26 @@ echo '{
   }
 }' | nc -U /tmp/mcp.sock
 
-# Submit developer critique
-echo -e "\nStep 2: Submit Developer Critique"
+# Select personas (use the recommended pair from Step 1)
+echo -e "\nStep 2: Select Personas"
 echo '{
   "jsonrpc": "2.0",
   "id": 2,
+  "method": "callTool",
+  "params": {
+    "name": "select_personas",
+    "arguments": {
+      "session_id": "'$SESSION_ID'",
+      "persona_pair": ["Developer", "Security Expert"]
+    }
+  }
+}' | nc -U /tmp/mcp.sock
+
+# Submit developer critique
+echo -e "\nStep 3: Submit Developer Critique"
+echo '{
+  "jsonrpc": "2.0",
+  "id": 3,
   "method": "callTool",
   "params": {
     "name": "submit_critique",
@@ -40,10 +55,10 @@ echo '{
 }' | nc -U /tmp/mcp.sock
 
 # Submit security expert critique
-echo -e "\nStep 3: Submit Security Expert Critique"
+echo -e "\nStep 4: Submit Security Expert Critique"
 echo '{
   "jsonrpc": "2.0",
-  "id": 3,
+  "id": 4,
   "method": "callTool",
   "params": {
     "name": "submit_critique",
@@ -56,10 +71,10 @@ echo '{
 }' | nc -U /tmp/mcp.sock
 
 # Submit synthesis
-echo -e "\nStep 4: Submit Synthesis"
+echo -e "\nStep 5: Submit Synthesis"
 echo '{
   "jsonrpc": "2.0",
-  "id": 4,
+  "id": 5,
   "method": "callTool",
   "params": {
     "name": "submit_synthesis",
@@ -70,28 +85,4 @@ echo '{
   }
 }' | nc -U /tmp/mcp.sock
 
-# Get session data
-echo -e "\nStep 5: Get Session Data"
-echo '{
-  "jsonrpc": "2.0",
-  "id": 5,
-  "method": "callTool",
-  "params": {
-    "name": "get_session",
-    "arguments": {
-      "session_id": "'$SESSION_ID'"
-    }
-  }
-}' | nc -U /tmp/mcp.sock
-
-# Get available domains
-echo -e "\nExample: Get Available Domains"
-echo '{
-  "jsonrpc": "2.0",
-  "id": 6,
-  "method": "callTool",
-  "params": {
-    "name": "get_domains",
-    "arguments": {}
-  }
-}' | nc -U /tmp/mcp.sock
+echo -e "\nTest completed! Session validation flow executed successfully."

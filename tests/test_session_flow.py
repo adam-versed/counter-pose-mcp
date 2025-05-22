@@ -35,11 +35,27 @@ def test_counter_pose_session_flow():
     init_result = tool.init_session(session_id, initial_reasoning)
     print(f"Session ID: {init_result['session_id']}")
     print(f"Detected Domain: {init_result['domain']}")
-    print(f"Selected Personas: {', '.join(init_result['personas'])}")
-    print(f"Next Step: {init_result['next_step']} by {init_result['next_persona']}")
+    print(f"Next Step: {init_result['next_step']}")
     
-    # Step 2: Submit first critique (Developer)
-    print("\nStep 2: Submit First Critique (Developer)")
+    # Display persona options
+    print("\nPersona Options:")
+    for i, option in enumerate(init_result['persona_options'], 1):
+        rec = " (RECOMMENDED)" if option['recommended'] else ""
+        print(f"  {i}. {option['personas'][0]} vs {option['personas'][1]}{rec}")
+        print(f"     Score: {option['score']}, Reason: {option['reason']}")
+    
+    # Step 2: Select personas (use the recommended pair)
+    print("\nStep 2: Select Personas")
+    print("-" * 40)
+    
+    recommended_pair = next(opt['personas'] for opt in init_result['persona_options'] if opt['recommended'])
+    select_result = tool.select_personas(session_id, recommended_pair)
+    
+    print(f"Selected Personas: {', '.join(select_result['selected_personas'])}")
+    print(f"Next Step: {select_result['next_step']} by {select_result['next_persona']}")
+    
+    # Step 3: Submit first critique (Developer)
+    print("\nStep 3: Submit First Critique (Developer)")
     print("-" * 40)
     
     developer_critique = """
@@ -59,12 +75,12 @@ def test_counter_pose_session_flow():
     END CRITIQUE
     """
     
-    critique1_result = tool.submit_critique(session_id, "Developer", developer_critique)
+    critique1_result = tool.submit_critique(session_id, select_result['selected_personas'][0], developer_critique)
     print(f"Current Step: {critique1_result['current_step']}")
     print(f"Next Step: {critique1_result['next_step']} by {critique1_result.get('next_persona', 'N/A')}")
     
-    # Step 3: Submit second critique (Security Expert)
-    print("\nStep 3: Submit Second Critique (Security Expert)")
+    # Step 4: Submit second critique (Security Expert)
+    print("\nStep 4: Submit Second Critique (Security Expert)")
     print("-" * 40)
     
     security_critique = """
@@ -85,12 +101,12 @@ def test_counter_pose_session_flow():
     END CRITIQUE
     """
     
-    critique2_result = tool.submit_critique(session_id, "Security Expert", security_critique)
+    critique2_result = tool.submit_critique(session_id, select_result['selected_personas'][1], security_critique)
     print(f"Current Step: {critique2_result['current_step']}")
     print(f"Next Step: {critique2_result['next_step']}")
     
-    # Step 4: Submit synthesis
-    print("\nStep 4: Submit Synthesis")
+    # Step 5: Submit synthesis
+    print("\nStep 5: Submit Synthesis")
     print("-" * 40)
     
     synthesis = """
@@ -134,17 +150,14 @@ def test_counter_pose_session_flow():
     print(f"Confidence: {synthesis_result['confidence']}")
     print(f"Changes needed: {synthesis_result['changes_needed']}")
     
-    # Step 5: Get session data
-    print("\nStep 5: Get Session Data")
+    print("\nStep 6: Validation Complete")
     print("-" * 40)
+    print(f"Domain: {synthesis_result['domain']}")
+    print(f"Personas: {', '.join(synthesis_result['personas'])}")
+    print(f"Steps completed: {synthesis_result['steps_completed']}")
     
-    session_data = tool.get_session(session_id)
-    print(f"Session ID: {session_data['session_id']}")
-    print(f"Domain: {session_data['domain']}")
-    print(f"Personas: {', '.join(session_data['personas'])}")
-    print(f"Steps completed: {len(session_data['steps'])}")
-    
-    print("\nTest completed successfully!")
+    print("\n✅ Test completed successfully!")
+    return True
 
 
 def test_multi_domain_detection():
@@ -164,16 +177,32 @@ def test_multi_domain_detection():
     print("TESTING DOMAIN DETECTION")
     print("=" * 80)
     
+    all_passed = True
     for expected_domain, text in test_cases.items():
         detected_domain = tool.determine_domain(text)
+        match = detected_domain == expected_domain
+        if not match:
+            all_passed = False
+            
         print(f"\nText: {text[:50]}...")
         print(f"Expected domain: {expected_domain}")
         print(f"Detected domain: {detected_domain}")
-        print(f"Match: {'✅' if detected_domain == expected_domain else '❌'}")
+        print(f"Match: {'✅' if match else '❌'}")
     
-    print("\nDomain detection test completed!")
+    if all_passed:
+        print("\n✅ All domain detection tests passed!")
+    else:
+        print("\n❌ Some domain detection tests failed!")
+    
+    return all_passed
 
 
 if __name__ == "__main__":
-    test_counter_pose_session_flow()
-    test_multi_domain_detection()
+    test1_success = test_counter_pose_session_flow()
+    test2_success = test_multi_domain_detection()
+    
+    if test1_success and test2_success:
+        print("\n🎉 All tests passed!")
+    else:
+        print("\n💥 Some tests failed!")
+        sys.exit(1)
