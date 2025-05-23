@@ -122,5 +122,9 @@ dmypy.json
 # Editor specific files
 .idea/
 .vscode/
+.cursor/
 *.swp
-*.swo 
+*.swo
+
+# Claude Code configuration
+CLAUDE.md 
