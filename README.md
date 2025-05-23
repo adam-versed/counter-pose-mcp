@@ -1,25 +1,18 @@
 # Counter-Pose MCP Server: Reasoning Validator
 
-An implementation of the RPT (Reasoning-through-Perspective-Transition) technique as an MCP (Model Context Protocol) server focused on validating and critiquing LLM reasoning.
+An implementation of the RPT (Reasoning-through-Perspective-Transition) technique as an MCP (Model Context Protocol) server focused on validating and critiquing LLM reasoning - inspired by the sequential-thinking mcp server, acts as an orchestration layer for LLM reasoning validation.
+
+## tldr;
+
+Tending to use this for validating the LLM reasoning of complex or important tasks.  If you find value in this it would be great if you could:
+
+- star the repo
+- share about it on x.com
+- give me a follow for other helpful stuff i share often x.com/solodevbuilder
 
 ## About RPT and Reasoning Validation
 
 The RPT (Reasoning-through-Perspective-Transition) technique is a prompting method that improves AI responses by introducing deliberate perspective conflict between different personas. This approach was discovered by Tsinghua University researchers in January 2025 and has shown to reduce inaccuracies by up to 40%.
-
-This implementation adapts RPT specifically for **reasoning validation and improvement**, adding a metacognitive layer to LLM reasoning:
-
-1. **LLM Reasoning**: A reasoning LLM produces initial thoughts about a query
-2. **Domain-Aware Analysis**: Counter-Pose automatically detects the domain and selects relevant expert personas
-3. **Multi-Expert Critique**: Domain experts provide structured critique identifying blind spots and weaknesses
-4. **Validation Synthesis**: Combines perspectives into actionable recommendations with confidence assessment
-5. **Reasoning Refinement**: Original LLM can revise its approach based on expert feedback
-
-**Key Advantages:**
-
-- **Automatic Domain Detection**: No manual domain specification required
-- **Intelligent Expert Selection**: Gets the most relevant expert pairing for your content
-- **Structured Validation Output**: Standardized format for confidence, blind spots, and recommendations
-- **Session-Based**: Maintains context across multi-step validation process
 
 ## How It Works
 
@@ -34,7 +27,7 @@ The Counter-Pose Reasoning Validator uses a streamlined 3-step session-based flo
 - **Automatic Domain Detection**: No need to manually specify domain
 - **Smart Persona Recommendations**: Gets the most relevant expert pairing based on content analysis
 - **Session-Based Flow**: Maintains context across multiple tool calls
-- **Comprehensive Validation**: Structured output with confidence assessment and actionable recommendations
+- **Comprehensive Validation**: Orchestrates the calling LLLM to produce a structured output with confidence assessment and actionable recommendations
 
 ## Available Domains
 
@@ -135,6 +128,20 @@ The server provides the following tools for a session-based reasoning validation
 ## Example Usage Flow
 
 Here's an example of the streamlined 3-step reasoning validation flow:
+
+### Visual Example: Twitter Growth Web App Validation
+
+The following screenshots demonstrate the complete validation process for a Twitter growth web app concept:
+
+![Step 1: Initial Reasoning Submission](example/example1.png)
+
+![Step 2: MCP Tool Orchestration and Critique Analysis](example/example2.png)
+
+![Step 3: Contradictions and Confidence Assessment](example/example3.png)
+
+![Step 4: Final Recommendations and Synthesis](example/example4.png)
+
+### JSON API Examples
 
 ### Step 1: Submit Reasoning
 
