@@ -127,4 +127,7 @@ dmypy.json
 *.swo
 
 # Claude Code configuration
-CLAUDE.md 
+CLAUDE.md
+
+# Data directory
+data/ 
