@@ -223,15 +223,6 @@ This tool is designed to be integrated with reasoning LLMs as an external valida
 5. **Synthesis**: LLM uses the provided synthesis format to generate final analysis
 6. **Reasoning Refinement**: LLM reviews the complete analysis and decides whether to revise its approach
 
-### **Why Use MCP Server vs Direct RPT Prompting?**
-
-- **Consistent Domain Expertise**: Pre-trained persona knowledge vs ad-hoc prompt personas
-- **Intelligent Matching**: Automatic domain detection and expert selection
-- **Structured Output**: Standardized validation format for programmatic use
-- **Separation of Concerns**: Keep validation logic separate from main reasoning
-- **Reusable**: Single server serves multiple LLM applications
-- **Stateful Sessions**: Maintain context across multi-step validation processes
-
 ### **Supported Integrations**
 
 - **Claude Desktop**: Direct MCP integration
