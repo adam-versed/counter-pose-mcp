@@ -100,18 +100,18 @@ def test_persona_ranking_accuracy():
     return all_passed
 
 
-def test_init_session_persona_options():
-    """Test that init_session returns properly formatted persona options."""
+def test_submit_reasoning_persona_options():
+    """Test that submit_reasoning returns properly formatted persona options."""
     tool = CounterPoseTool()
     
     print("\n" + "=" * 50)
-    print("TESTING INIT_SESSION PERSONA OPTIONS")
+    print("TESTING SUBMIT_REASONING PERSONA OPTIONS")
     print("=" * 50)
     
     session_id = str(uuid.uuid4())
     reasoning = "I need to optimize my social media content strategy to increase engagement and grow my X.com followers."
     
-    result = tool.init_session(session_id, reasoning)
+    result = tool.submit_reasoning(session_id, reasoning)
     
     print(f"Session ID: {result['session_id']}")
     print(f"Domain: {result['domain']}")
@@ -169,25 +169,25 @@ def test_init_session_persona_options():
     return structure_valid and options_valid
 
 
-def test_select_personas_validation():
+def test_get_persona_guidance_validation():
     """Test persona selection validation and flow."""
     tool = CounterPoseTool()
     
     print("\n" + "=" * 50)
-    print("TESTING SELECT_PERSONAS VALIDATION")
+    print("TESTING GET_PERSONA_GUIDANCE VALIDATION")
     print("=" * 50)
     
     session_id = str(uuid.uuid4())
     reasoning = "I need help with my software architecture design and security considerations."
     
     # Initialize session
-    init_result = tool.init_session(session_id, reasoning)
+    init_result = tool.submit_reasoning(session_id, reasoning)
     print(f"Initialized session for domain: {init_result['domain']}")
     
     # Test valid persona selection
     print("\nTesting valid persona selection:")
     valid_pair = ["Developer", "Security Expert"]
-    select_result = tool.select_personas(session_id, valid_pair)
+    select_result = tool.get_persona_guidance(session_id, valid_pair)
     
     valid_selection = (
         'error' not in select_result and
@@ -203,7 +203,7 @@ def test_select_personas_validation():
     
     # Test invalid persona selection (wrong number)
     print("\nTesting invalid persona selection (wrong count):")
-    invalid_result = tool.select_personas(session_id, ["Only One Persona"])
+    invalid_result = tool.get_persona_guidance(session_id, ["Only One Persona"])
     invalid_handled = 'error' in invalid_result
     print(f"Error handled: {'✅' if invalid_handled else '❌'}")
     if invalid_handled:
@@ -212,7 +212,7 @@ def test_select_personas_validation():
     # Test invalid session ID
     print("\nTesting invalid session ID:")
     fake_session = str(uuid.uuid4())
-    session_error_result = tool.select_personas(fake_session, valid_pair)
+    session_error_result = tool.get_persona_guidance(fake_session, valid_pair)
     session_error_handled = 'error' in session_error_result
     print(f"Session error handled: {'✅' if session_error_handled else '❌'}")
     if session_error_handled:
@@ -221,21 +221,92 @@ def test_select_personas_validation():
     return valid_selection and invalid_handled and session_error_handled
 
 
+def test_new_critique_flow():
+    """Test the new 3-step submit_critique flow."""
+    tool = CounterPoseTool()
+    
+    print("\n" + "=" * 50)
+    print("TESTING NEW 3-STEP CRITIQUE FLOW")
+    print("=" * 50)
+    
+    session_id = str(uuid.uuid4())
+    reasoning = "I need help with my social media growth strategy and content creation."
+    
+    # Initialize session
+    init_result = tool.submit_reasoning(session_id, reasoning)
+    print(f"Domain: {init_result['domain']}")
+    
+    # Get recommended personas from the session
+    recommended_option = next(opt for opt in init_result['persona_options'] if opt['recommended'])
+    personas = recommended_option['personas']
+    
+    # Select personas
+    select_result = tool.get_persona_guidance(session_id, personas)
+    print(f"Selected personas: {', '.join(select_result['selected_personas'])}")
+    
+    # Test complete critique submission (both personas)
+    print(f"\nSubmitting critiques from both {personas[0]} and {personas[1]}:")
+    first_critique = f"This is a test critique from {personas[0]}."
+    second_critique = f"This is a test critique from {personas[1]}."
+    result1 = tool.submit_critique(session_id, personas[0], first_critique, personas[1], second_critique)
+    
+    complete_flow = (
+        'error' not in result1 and
+        result1.get('critiques_complete') == True and
+        result1.get('next_step') == 'synthesis' and
+        result1.get('steps_completed') == 3 and
+        result1.get('total_steps') == 3 and
+        'format' in result1
+    )
+    
+    print(f"Critique submission completes flow: {'✅' if complete_flow else '❌'}")
+    if complete_flow:
+        print(f"  Critiques complete: {result1['critiques_complete']}")
+        print(f"  Next step: {result1['next_step']}")
+        print(f"  Steps completed: {result1['steps_completed']}/{result1['total_steps']}")
+    
+    # Test multiple critiques at once (new feature)
+    print(f"\nTesting multiple critiques submission:")
+    session_id2 = str(uuid.uuid4())
+    tool.submit_reasoning(session_id2, reasoning)
+    tool.get_persona_guidance(session_id2, personas)
+    
+    multiple_critiques = {
+        personas[0]: f"Multi-critique from {personas[0]}",
+        personas[1]: f"Multi-critique from {personas[1]}"
+    }
+    
+    multi_result = tool.submit_critique(session_id2, personas[0], multiple_critiques[personas[0]], personas[1], multiple_critiques[personas[1]])
+    
+    multi_flow = (
+        'error' not in multi_result and
+        multi_result.get('critiques_complete') == True and
+        multi_result.get('next_step') == 'synthesis' and
+        multi_result.get('steps_completed') == 3
+    )
+    
+    print(f"Multiple critiques at once: {'✅' if multi_flow else '❌'}")
+    
+    return complete_flow and multi_flow
+
+
 if __name__ == "__main__":
     test1_success = test_persona_ranking_accuracy()
-    test2_success = test_init_session_persona_options()
-    test3_success = test_select_personas_validation()
+    test2_success = test_submit_reasoning_persona_options()
+    test3_success = test_get_persona_guidance_validation()
+    test4_success = test_new_critique_flow()
     
     print("\n" + "=" * 50)
     print("PERSONA SELECTION TEST SUMMARY")
     print("=" * 50)
     
-    if test1_success and test2_success and test3_success:
+    if test1_success and test2_success and test3_success and test4_success:
         print("🎉 All persona selection tests passed!")
         sys.exit(0)
     else:
         print("💥 Some persona selection tests failed!")
         print(f"  Ranking accuracy: {'✅' if test1_success else '❌'}")
-        print(f"  Init session format: {'✅' if test2_success else '❌'}")
-        print(f"  Selection validation: {'✅' if test3_success else '❌'}")
+        print(f"  Submit reasoning format: {'✅' if test2_success else '❌'}")
+        print(f"  Guidance validation: {'✅' if test3_success else '❌'}")
+        print(f"  New critique flow: {'✅' if test4_success else '❌'}")
         sys.exit(1) 

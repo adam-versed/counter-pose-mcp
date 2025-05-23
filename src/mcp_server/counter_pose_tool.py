@@ -494,6 +494,10 @@ class CounterPoseTool:
         pairs_with_scores.sort(key=lambda x: (-x[1], self.persona_pairs[domain].index(x[0])))
         return pairs_with_scores
 
+    def submit_reasoning(self, session_id: str, initial_reasoning: str) -> Dict:
+        """Submit reasoning for analysis and get persona options."""
+        return self.init_session(session_id, initial_reasoning)
+
     def init_session(self, session_id: str, initial_reasoning: str) -> Dict:
         """Initialize a new Counter-Pose session with persona options."""
         # Determine domain from initial reasoning
@@ -523,15 +527,15 @@ class CounterPoseTool:
                 {"personas": list(pair), "score": score, "reason": reason, "recommended": i == 0}
                 for i, (pair, score, reason) in enumerate(ranked_pairs)
             ],
-            "next_step": "select_personas",
+            "next_step": "get_persona_guidance",
             "instructions": (
                 "Choose a persona pair from the options above, or specify your own "
                 "custom pair for this domain."
             ),
         }
 
-    def select_personas(self, session_id: str, persona_pair: List[str]) -> Dict:
-        """Select personas for the session and start the critique process."""
+    def get_persona_guidance(self, session_id: str, persona_pair: List[str]) -> Dict:
+        """Get guidance for performing critique with selected personas."""
         # Get session
         session = self.sessions.get(session_id)
         if not session:
@@ -550,19 +554,21 @@ class CounterPoseTool:
             session_id=session_id,
             domain=session.domain,
             persona="system",
-            step="select_personas",
+            step="get_persona_guidance",
             reasoning_length=len(str(persona_pair)),
         )
 
-        # Return first critique instructions
+        # Return critique instructions for both personas
         return {
             "session_id": session_id,
             "domain": session.domain,
             "selected_personas": persona_pair,
-            "next_persona": persona_pair[0],
             "next_step": "critique",
-            "format": self._get_critique_format(persona_pair[0]),
-            "total_steps": 3,  # Two critiques + synthesis
+            "format": {
+                "persona1_guidance": self._get_critique_format(persona_pair[0]),
+                "persona2_guidance": self._get_critique_format(persona_pair[1])
+            },
+            "total_steps": 3,  # submit_reasoning + get_persona_guidance + submit_critique
         }
 
     def _get_critique_format(self, persona: str) -> str:
@@ -571,6 +577,7 @@ class CounterPoseTool:
 
         # Provide guidance based on persona type
         persona_guidance = {
+            # Software Development personas
             "developer": (
                 "Focus on implementation feasibility, component design, and technical debt"
             ),
@@ -582,19 +589,112 @@ class CounterPoseTool:
                 "and user interface implementation"
             ),
             "ux designer": "Focus on user experience, accessibility, and usability",
+            "backend engineer": (
+                "Focus on server architecture, database design, API structure, and scalability"
+            ),
+            "devops engineer": (
+                "Focus on deployment, infrastructure, automation, and operational reliability"
+            ),
+            "performance engineer": (
+                "Focus on speed optimization, resource efficiency, and performance bottlenecks"
+            ),
+            "maintainability advocate": (
+                "Focus on code clarity, documentation, refactoring, and long-term sustainability"
+            ),
+            # Digital Marketing personas
             "creative director": (
                 "Focus on brand consistency, emotional impact, and creative storytelling"
             ),
             "analytics specialist": (
                 "Focus on measurable outcomes, data validation, and statistical rigor"
             ),
+            "brand strategist": (
+                "Focus on brand positioning, market differentiation, and brand equity"
+            ),
+            "conversion optimizer": (
+                "Focus on funnel optimization, A/B testing, and conversion rate improvement"
+            ),
+            "social media expert": (
+                "Focus on platform-specific strategies, community engagement, and viral potential"
+            ),
+            "growth hacker": (
+                "Focus on rapid experimentation, user acquisition, and scalable growth tactics"
+            ),
+            "content creator": (
+                "Focus on content quality, storytelling, and audience engagement"
+            ),
+            "performance marketer": (
+                "Focus on paid advertising efficiency, ROAS, and campaign optimization"
+            ),
+            "b2b marketer": (
+                "Focus on enterprise sales cycles, stakeholder management, and business value"
+            ),
+            "b2c marketer": (
+                "Focus on consumer psychology, mass appeal, and emotional triggers"
+            ),
+            "landing page expert": (
+                "Focus on conversion optimization, user flow, and page performance"
+            ),
+            "seo specialist": (
+                "Focus on search visibility, organic traffic, and content discoverability"
+            ),
+            # Visual Design personas
             "ui minimalist": "Focus on simplicity, clarity, and cognitive load reduction",
             "feature-rich designer": (
                 "Focus on functionality completeness, discoverability, and feature organization"
             ),
+            "brand identity expert": (
+                "Focus on visual consistency, brand recognition, and identity system coherence"
+            ),
+            "user-centered designer": (
+                "Focus on user research, usability testing, and human-centered design principles"
+            ),
+            "print design specialist": (
+                "Focus on typography, layout hierarchy, and traditional design principles"
+            ),
+            "digital-first designer": (
+                "Focus on interactive elements, responsive design, and digital-native experiences"
+            ),
+            "artistic creative": (
+                "Focus on aesthetic impact, creative expression, and visual innovation"
+            ),
+            "data-driven designer": (
+                "Focus on user analytics, A/B testing, and evidence-based design decisions"
+            ),
+            "accessibility expert": (
+                "Focus on inclusive design, WCAG compliance, and barrier-free experiences"
+            ),
+            "visual artist": (
+                "Focus on aesthetic beauty, artistic composition, and visual storytelling"
+            ),
+            # Product Strategy personas
             "customer advocate": "Focus on user needs, pain points, and accessibility",
             "business strategist": (
                 "Focus on strategic alignment, competitive positioning, and monetization"
+            ),
+            "innovative disruptor": (
+                "Focus on breakthrough innovation, market disruption, and paradigm shifts"
+            ),
+            "market researcher": (
+                "Focus on market validation, competitive analysis, and data-driven insights"
+            ),
+            "mvp champion": (
+                "Focus on minimal viable features, rapid iteration, and speed to market"
+            ),
+            "quality perfectionist": (
+                "Focus on polish, reliability, and comprehensive feature completeness"
+            ),
+            "long-term strategist": (
+                "Focus on sustainable growth, strategic vision, and future planning"
+            ),
+            "quick-to-market tactician": (
+                "Focus on immediate opportunities, tactical execution, and rapid deployment"
+            ),
+            "technical pm": (
+                "Focus on technical feasibility, engineering constraints, and implementation details"
+            ),
+            "business pm": (
+                "Focus on market fit, business metrics, and stakeholder alignment"
             ),
         }
 
@@ -621,66 +721,70 @@ class CounterPoseTool:
             END CRITIQUE
             """
 
-    def submit_critique(self, session_id: str, persona: str, critique: str) -> Dict:
-        """Submit a critique from a specific persona."""
+    def submit_critique(
+        self, 
+        session_id: str, 
+        persona1_name: str, 
+        persona1_critique: str, 
+        persona2_name: str, 
+        persona2_critique: str
+    ) -> Dict:
+        """Submit critiques from both selected personas."""
         # Get session
         session = self.sessions.get(session_id)
         if not session:
             return {"error": f"Session {session_id} not found"}
 
-        # Validate persona
-        if persona not in session.personas:
-            return {"error": f"Persona {persona} not part of this session"}
+        # Validate both personas are part of session
+        if persona1_name not in session.personas:
+            return {"error": f"Persona '{persona1_name}' not part of this session. Expected: {session.personas}"}
+        if persona2_name not in session.personas:
+            return {"error": f"Persona '{persona2_name}' not part of this session. Expected: {session.personas}"}
 
-        # Add step to session history
-        session.steps.append(
-            {
-                "type": "critique",
-                "persona": persona,
-                "content": critique,
-                "timestamp": datetime.now().isoformat(),
+        # Validate we have both expected personas
+        if set([persona1_name, persona2_name]) != set(session.personas):
+            return {"error": f"Must provide critiques for both personas: {session.personas}"}
+
+        # Add both critique steps to session history
+        critiques = [
+            (persona1_name, persona1_critique),
+            (persona2_name, persona2_critique)
+        ]
+        
+        for persona_name, critique_content in critiques:
+            session.steps.append(
+                {
+                    "type": "critique",
+                    "persona": persona_name,
+                    "content": critique_content,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+
+            # Log usage for each critique
+            self.logger.log_usage(
+                session_id=session_id,
+                domain=session.domain,
+                persona=persona_name,
+                step="critique",
+                reasoning_length=len(critique_content),
+            )
+
+        # All critiques complete - return ready for synthesis format
+        return {
+            "session_id": session_id,
+            "domain": session.domain,
+            "personas": session.personas,
+            "critiques_complete": True,
+            "next_step": "synthesis",
+            "format": self._get_synthesis_format(session),
+            "total_steps": 3,  # submit_reasoning + get_persona_guidance + submit_critique
+            "steps_completed": 3,
+            "critiques_received": {
+                persona1_name: len(persona1_critique),
+                persona2_name: len(persona2_critique)
             }
-        )
-
-        # Update current persona index
-        session.current_persona_index = session.personas.index(persona)
-
-        # Log usage
-        self.logger.log_usage(
-            session_id=session_id,
-            domain=session.domain,
-            persona=persona,
-            step="critique",
-            reasoning_length=len(critique),
-        )
-
-        # Determine next step
-        critiques_count = len([s for s in session.steps if s["type"] == "critique"])
-
-        if critiques_count < len(session.personas):
-            # More personas need to critique
-            next_persona_index = (session.current_persona_index + 1) % len(session.personas)
-            next_persona = session.personas[next_persona_index]
-
-            return {
-                "session_id": session_id,
-                "domain": session.domain,
-                "current_step": critiques_count,
-                "next_persona": next_persona,
-                "next_step": "critique",
-                "format": self._get_critique_format(next_persona),
-                "total_steps": len(session.personas) + 1,  # All critiques + synthesis
-            }
-        else:
-            # All critiques done, move to synthesis
-            return {
-                "session_id": session_id,
-                "domain": session.domain,
-                "current_step": critiques_count,
-                "next_step": "synthesis",
-                "format": self._get_synthesis_format(session),
-                "total_steps": len(session.personas) + 1,  # All critiques + synthesis
-            }
+        }
 
     def _get_synthesis_format(self, session: CounterPoseSession) -> str:
         """Get formatting guidance for the synthesis step."""
@@ -689,14 +793,20 @@ class CounterPoseTool:
             SYNTHESIS OF PERSPECTIVES:
 
             After considering the critiques from {personas_list}, 
-            synthesize a balanced recommendation.
+            use this analysis to review and improve your understanding and execution 
+            of the original user query.
 
             Your synthesis should:
             1. Identify key blind spots raised by each perspective
             2. Note any contradictions between perspectives
             3. Provide a confidence assessment (High/Medium/Low)
             4. Recommend whether changes are needed to the original reasoning
-            5. Offer specific recommendations for improvement
+            5. Apply these insights to refine your approach to the user's request
+            6. Offer specific recommendations for improvement
+
+            IMPORTANT: Use this synthesis to revisit your original understanding 
+            and execution of the user's query. Consider how the identified blind spots 
+            and contradictions might affect your response quality and accuracy.
 
             Format your synthesis as:
 
@@ -710,55 +820,13 @@ class CounterPoseTool:
 
             CHANGES NEEDED: <Yes/No>
 
+            REVISED UNDERSTANDING:
+            <How this analysis changes your understanding of the original user query>
+
             RECOMMENDATION:
-            <Your synthesized recommendation>
+            <Your synthesized recommendation for improving the original response>
 
             END SYNTHESIS
             """
 
-    def submit_synthesis(self, session_id: str, synthesis: str) -> Dict:
-        """Submit the final synthesis for a session."""
-        # Get session
-        session = self.sessions.get(session_id)
-        if not session:
-            return {"error": f"Session {session_id} not found"}
-
-        # Add synthesis to session history
-        session.steps.append(
-            {"type": "synthesis", "content": synthesis, "timestamp": datetime.now().isoformat()}
-        )
-
-        # Log usage
-        self.logger.log_usage(
-            session_id=session_id,
-            domain=session.domain,
-            persona="synthesizer",
-            step="synthesis",
-            reasoning_length=len(synthesis),
-        )
-
-        # Extract metadata (this would normally be done by the calling LLM,
-        # but we'll do simple extraction for testing purposes)
-
-        # Extract confidence
-        if "CONFIDENCE: High" in synthesis:
-            session.confidence = "High"
-        elif "CONFIDENCE: Medium" in synthesis:
-            session.confidence = "Medium"
-        else:
-            session.confidence = "Low"
-
-        # Extract changes needed
-        session.changes_needed = "CHANGES NEEDED: Yes" in synthesis
-
-        # Return session summary
-        return {
-            "session_id": session_id,
-            "domain": session.domain,
-            "personas": session.personas,
-            "steps_completed": len(session.steps),
-            "complete": True,
-            "confidence": session.confidence,
-            "changes_needed": session.changes_needed,
-            "session_summary": session.to_dict(),
-        }
+    # complete_analysis method removed - synthesis now handled by submit_critique

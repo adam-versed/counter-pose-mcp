@@ -21,15 +21,16 @@ mcp = FastMCP(
 
 
 @mcp.tool()
-def init_counter_pose(reasoning: str, session_id: Optional[str] = None) -> dict:
-    """Initialize a Counter-Pose RPT reasoning session.
+def submit_reasoning(reasoning: str, session_id: Optional[str] = None) -> dict:
+    """Submit reasoning for Counter-Pose RPT analysis.
 
     The Counter-Pose tool implements the Reasoning-through-Perspective-Transition (RPT) technique
     to improve reasoning by examining it from multiple domain-specific perspectives.
 
-    This is step 1 of a 2-step initialization process:
-    1. init_counter_pose - Returns ranked persona pair options based on reasoning content
-    2. select_personas - Choose which persona pair to use for critique
+    This is step 1 of a 3-step analysis process:
+    1. submit_reasoning - Submit reasoning and get ranked persona pair options
+    2. get_persona_guidance - Get guidance on how to perform critique for selected personas
+    3. submit_critique - Submit critiques from both personas and receive synthesis guidance
 
     Args:
         reasoning: The initial reasoning to analyze
@@ -42,50 +43,50 @@ def init_counter_pose(reasoning: str, session_id: Optional[str] = None) -> dict:
     if not session_id:
         session_id = str(uuid.uuid4())
 
-    return counter_pose.init_session(session_id, reasoning)
+    return counter_pose.submit_reasoning(session_id, reasoning)
 
 
 @mcp.tool()
-def select_personas(session_id: str, persona_pair: List[str]) -> dict:
-    """Select personas for a Counter-Pose session.
+def get_persona_guidance(session_id: str, persona_pair: List[str]) -> dict:
+    """Get guidance for performing critique with selected personas.
 
     Args:
-        session_id: The session ID from init_counter_pose
+        session_id: The session ID from submit_reasoning
         persona_pair: List of exactly 2 persona names to use for critique
 
     Returns:
-        Session information with next steps for critique submission
+        Guidance and formatting instructions for performing critiques with the selected personas
     """
-    return counter_pose.select_personas(session_id, persona_pair)
+    return counter_pose.get_persona_guidance(session_id, persona_pair)
 
 
 @mcp.tool()
-def submit_critique(session_id: str, persona: str, critique: str) -> dict:
-    """Submit a critique from a specific persona's perspective.
+def submit_critique(
+    session_id: str, 
+    persona1_name: str, 
+    persona1_critique: str, 
+    persona2_name: str, 
+    persona2_critique: str
+) -> dict:
+    """Submit critiques from both selected personas.
+
+    This function expects exactly 2 persona critiques as determined by the get_persona_guidance step.
+    Both personas must match those selected in the previous step.
 
     Args:
-        session_id: The session ID from init_counter_pose
-        persona: The persona providing the critique
-        critique: The critique content
+        session_id: The session ID from submit_reasoning
+        persona1_name: Name of the first persona (e.g., "Developer")
+        persona1_critique: Critique content from the first persona's perspective
+        persona2_name: Name of the second persona (e.g., "Security Expert")
+        persona2_critique: Critique content from the second persona's perspective
 
     Returns:
-        Updated session information with next steps
+        Complete analysis with synthesis format guidance for the calling LLM
     """
-    return counter_pose.submit_critique(session_id, persona, critique)
+    return counter_pose.submit_critique(session_id, persona1_name, persona1_critique, persona2_name, persona2_critique)
 
 
-@mcp.tool()
-def submit_synthesis(session_id: str, synthesis: str) -> dict:
-    """Submit the final synthesis for a Counter-Pose session.
-
-    Args:
-        session_id: The session ID from init_counter_pose
-        synthesis: The synthesized conclusion
-
-    Returns:
-        Session summary with metadata
-    """
-    return counter_pose.submit_synthesis(session_id, synthesis)
+# complete_analysis function removed - synthesis now handled by submit_critique
 
 
 def main() -> None:

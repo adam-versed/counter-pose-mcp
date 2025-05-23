@@ -14,32 +14,27 @@ def test_invalid_session_handling():
     fake_session_id = str(uuid.uuid4())
     all_passed = True
     
-    # Test select_personas with invalid session
-    print("\nTesting select_personas with invalid session:")
-    result = tool.select_personas(fake_session_id, ["Developer", "Security Expert"])
+    # Test get_persona_guidance with invalid session
+    print("\nTesting get_persona_guidance with invalid session:")
+    result = tool.get_persona_guidance(fake_session_id, ["Developer", "Security Expert"])
     if 'error' in result and 'not found' in result['error']:
-        print("✅ select_personas correctly handles invalid session")
+        print("✅ get_persona_guidance correctly handles invalid session")
     else:
-        print("❌ select_personas should return error for invalid session")
+        print("❌ get_persona_guidance should return error for invalid session")
         all_passed = False
     
     # Test submit_critique with invalid session
     print("\nTesting submit_critique with invalid session:")
-    result = tool.submit_critique(fake_session_id, "Developer", "Some critique")
+    result = tool.submit_critique(fake_session_id, "Persona1", "critique1", "Persona2", "critique2")
     if 'error' in result and 'not found' in result['error']:
         print("✅ submit_critique correctly handles invalid session")
     else:
         print("❌ submit_critique should return error for invalid session")
         all_passed = False
     
-    # Test submit_synthesis with invalid session
-    print("\nTesting submit_synthesis with invalid session:")
-    result = tool.submit_synthesis(fake_session_id, "Some synthesis")
-    if 'error' in result and 'not found' in result['error']:
-        print("✅ submit_synthesis correctly handles invalid session")
-    else:
-        print("❌ submit_synthesis should return error for invalid session")
-        all_passed = False
+    # Note: complete_analysis method has been removed in new 3-step flow
+    print("\nNote: complete_analysis method removed in new 3-step flow")
+    print("✅ Analysis completion now handled by submit_critique")
     
     return all_passed
 
@@ -67,7 +62,7 @@ def test_invalid_persona_validation():
     ]
     
     for i, personas in enumerate(test_cases):
-        result = tool.select_personas(session_id, personas)
+        result = tool.get_persona_guidance(session_id, personas)
         if 'error' in result:
             print(f"✅ Case {i+1}: Correctly rejected {len(personas)} personas")
         else:
@@ -75,11 +70,11 @@ def test_invalid_persona_validation():
             all_passed = False
     
     # Set up valid personas for critique testing
-    tool.select_personas(session_id, ["Developer", "Security Expert"])
+    tool.get_persona_guidance(session_id, ["Developer", "Security Expert"])
     
     # Test submit_critique with invalid persona
     print("\nTesting submit_critique with invalid persona:")
-    result = tool.submit_critique(session_id, "NonExistentPersona", "Some critique")
+    result = tool.submit_critique(session_id, "Persona1", "critique1", "Persona2", "critique2")
     if 'error' in result and 'not part of this session' in result['error']:
         print("✅ submit_critique correctly rejects invalid persona")
     else:
@@ -103,7 +98,7 @@ def test_empty_and_edge_case_inputs():
     print("\nTesting empty reasoning string:")
     session_id = str(uuid.uuid4())
     try:
-        result = tool.init_session(session_id, "")
+        result = tool.submit_reasoning(session_id, "")
         # Should not crash, should default to product_strategy domain
         if result.get('domain') == 'product_strategy':
             print("✅ Empty reasoning defaults to product_strategy domain")
@@ -117,7 +112,7 @@ def test_empty_and_edge_case_inputs():
     # Test very short reasoning
     print("\nTesting very short reasoning:")
     try:
-        result = tool.init_session(str(uuid.uuid4()), "a")
+        result = tool.submit_reasoning(str(uuid.uuid4()), "a")
         if 'domain' in result:
             print("✅ Very short reasoning handled without crash")
         else:
@@ -131,7 +126,7 @@ def test_empty_and_edge_case_inputs():
     print("\nTesting very long reasoning:")
     long_reasoning = "software development " * 1000  # Very long string
     try:
-        result = tool.init_session(str(uuid.uuid4()), long_reasoning)
+        result = tool.submit_reasoning(str(uuid.uuid4()), long_reasoning)
         if result.get('domain') == 'software_development':
             print("✅ Very long reasoning handled correctly")
         else:
@@ -145,7 +140,7 @@ def test_empty_and_edge_case_inputs():
     print("\nTesting special characters:")
     special_reasoning = "software 💻 development with émojis and ñoñ-ASCII çhars"
     try:
-        result = tool.init_session(str(uuid.uuid4()), special_reasoning)
+        result = tool.submit_reasoning(str(uuid.uuid4()), special_reasoning)
         if 'domain' in result:
             print("✅ Special characters handled without crash")
         else:
@@ -170,12 +165,12 @@ def test_session_state_consistency():
     all_passed = True
     
     # Initialize session
-    init_result = tool.init_session(session_id, "I need help with software security and development")
+    init_result = tool.submit_reasoning(session_id, "I need help with software security and development")
     print(f"Initialized session with domain: {init_result['domain']}")
     
     # Select personas
     selected_personas = ["Developer", "Security Expert"]
-    select_result = tool.select_personas(session_id, selected_personas)
+    select_result = tool.get_persona_guidance(session_id, selected_personas)
     
     # Verify session state
     session = tool.sessions.get(session_id)
@@ -198,7 +193,7 @@ def test_session_state_consistency():
             all_passed = False
     
     # Submit first critique and check state
-    critique_result = tool.submit_critique(session_id, "Developer", "Test critique")
+    critique_result = tool.submit_critique(session_id, "Developer", "Test critique", "Security Expert", "Second critique")
     
     # Check that step was recorded
     if len(session.steps) == 1:
@@ -237,7 +232,7 @@ def test_concurrent_sessions():
         ]
         expected_domains = ["software_development", "digital_marketing", "visual_design"]
         
-        result = tool.init_session(session_id, domain_texts[i])
+        result = tool.submit_reasoning(session_id, domain_texts[i])
         sessions.append({
             'id': session_id,
             'expected_domain': expected_domains[i],
@@ -264,8 +259,8 @@ def test_concurrent_sessions():
     session2_id = sessions[1]['id']
     
     # Select different personas for each
-    tool.select_personas(session1_id, ["Developer", "Security Expert"])
-    tool.select_personas(session2_id, ["Creative Director", "Analytics Specialist"])
+    tool.get_persona_guidance(session1_id, ["Developer", "Security Expert"])
+    tool.get_persona_guidance(session2_id, ["Creative Director", "Analytics Specialist"])
     
     session1 = tool.sessions[session1_id]
     session2 = tool.sessions[session2_id]

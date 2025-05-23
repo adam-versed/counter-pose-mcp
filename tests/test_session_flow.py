@@ -32,7 +32,7 @@ def test_counter_pose_session_flow():
     print("\nStep 1: Initialize Session")
     print("-" * 40)
     
-    init_result = tool.init_session(session_id, initial_reasoning)
+    init_result = tool.submit_reasoning(session_id, initial_reasoning)
     print(f"Session ID: {init_result['session_id']}")
     print(f"Detected Domain: {init_result['domain']}")
     print(f"Next Step: {init_result['next_step']}")
@@ -49,17 +49,18 @@ def test_counter_pose_session_flow():
     print("-" * 40)
     
     recommended_pair = next(opt['personas'] for opt in init_result['persona_options'] if opt['recommended'])
-    select_result = tool.select_personas(session_id, recommended_pair)
+    select_result = tool.get_persona_guidance(session_id, recommended_pair)
     
     print(f"Selected Personas: {', '.join(select_result['selected_personas'])}")
-    print(f"Next Step: {select_result['next_step']} by {select_result['next_persona']}")
+    print(f"Next Step: {select_result['next_step']}")
+    print(f"Format keys: {list(select_result['format'].keys())}")
     
-    # Step 3: Submit first critique (Developer)
-    print("\nStep 3: Submit First Critique (Developer)")
+    # Step 3: Submit both critiques
+    print("\nStep 3: Submit Both Critiques")
     print("-" * 40)
     
-    developer_critique = """
-    👨‍💻 DEVELOPER's CRITIQUE:
+    persona1_critique = """
+    👨‍💻 FRONTEND ENGINEER's CRITIQUE:
     The authentication approach covers the basic flow, but has several technical limitations:
     
     1. Storing JWTs in localStorage is accessible to JavaScript, making it vulnerable to XSS attacks
@@ -75,86 +76,42 @@ def test_counter_pose_session_flow():
     END CRITIQUE
     """
     
-    critique1_result = tool.submit_critique(session_id, select_result['selected_personas'][0], developer_critique)
-    print(f"Current Step: {critique1_result['current_step']}")
-    print(f"Next Step: {critique1_result['next_step']} by {critique1_result.get('next_persona', 'N/A')}")
+    persona2_critique = """
+    🧑‍🎨 UX DESIGNER's CRITIQUE:
+    From a user experience perspective, this authentication system needs consideration:
     
-    # Step 4: Submit second critique (Security Expert)
-    print("\nStep 4: Submit Second Critique (Security Expert)")
-    print("-" * 40)
+    1. No mention of user feedback during authentication process
+    2. 24-hour expiration might frustrate users who need to re-login frequently
+    3. No consideration of different user types or permission levels
+    4. Missing accessibility considerations for authentication forms
+    5. No plan for handling authentication errors gracefully
     
-    security_critique = """
-    🔒 SECURITY EXPERT's CRITIQUE:
-    The proposed authentication design has serious security vulnerabilities:
-    
-    1. LocalStorage is vulnerable to XSS attacks - tokens can be stolen by injected scripts
-    2. There's no mention of HTTPS enforcement, which is essential for secure token transmission
-    3. The 24-hour expiration is too long for a sensitive application
-    4. No mention of CSRF protection mechanisms
-    5. No consideration of secure login practices (rate limiting, 2FA, etc.)
-    
-    Alternative approaches:
-    - Store tokens in HttpOnly cookies to prevent JavaScript access
-    - Implement shorter token lifetimes (1 hour) with refresh tokens
-    - Add CSRF protection if using cookies
-    - Consider adding rate limiting on login endpoints
+    UX improvements to consider:
+    - Clear loading states during authentication
+    - Helpful error messages for failed logins
+    - Remember me functionality
+    - Password strength indicators
     END CRITIQUE
     """
     
-    critique2_result = tool.submit_critique(session_id, select_result['selected_personas'][1], security_critique)
-    print(f"Current Step: {critique2_result['current_step']}")
-    print(f"Next Step: {critique2_result['next_step']}")
+    critique_result = tool.submit_critique(session_id, select_result['selected_personas'][0], persona1_critique, select_result['selected_personas'][1], persona2_critique)
+    print(f"Critiques Complete: {critique_result.get('critiques_complete', False)}")
+    print(f"Next Step: {critique_result['next_step']}")
+    print(f"Steps Completed: {critique_result.get('steps_completed', 0)}/{critique_result.get('total_steps', 0)}")
     
-    # Step 5: Submit synthesis
-    print("\nStep 5: Submit Synthesis")
+    # Step 4: Display synthesis format (critiques are now complete)
+    print("\nStep 4: Ready for Synthesis")
     print("-" * 40)
     
-    synthesis = """
-    SYNTHESIS OF PERSPECTIVES:
-    
-    After considering both the Developer and Security Expert perspectives, several important issues have been identified with the original authentication approach.
-    
-    BLIND SPOTS IDENTIFIED:
-    1. XSS vulnerability with localStorage token storage
-    2. No token refresh mechanism
-    3. No HTTPS enforcement
-    4. Excessive token lifetime
-    5. No CSRF protection
-    6. No error handling strategy
-    7. Scalability concerns with microservices
-    
-    CONTRADICTIONS FOUND:
-    None - both perspectives identified complementary issues
-    
-    CONFIDENCE: Low
-    
-    CHANGES NEEDED: Yes
-    
-    RECOMMENDATION:
-    The authentication system requires significant security improvements before implementation:
-    
-    1. Use HttpOnly cookies instead of localStorage to store tokens
-    2. Implement HTTPS across all endpoints
-    3. Reduce token lifetime to 1 hour and implement a refresh token mechanism
-    4. Add CSRF protection when using cookies
-    5. Implement rate limiting on authentication endpoints
-    6. Add comprehensive error handling
-    7. Consider centralized authentication if using microservices
-    
-    This revised approach balances security requirements with development considerations.
-    END SYNTHESIS
-    """
-    
-    synthesis_result = tool.submit_synthesis(session_id, synthesis)
-    print(f"Session completed: {synthesis_result['complete']}")
-    print(f"Confidence: {synthesis_result['confidence']}")
-    print(f"Changes needed: {synthesis_result['changes_needed']}")
-    
-    print("\nStep 6: Validation Complete")
-    print("-" * 40)
-    print(f"Domain: {synthesis_result['domain']}")
-    print(f"Personas: {', '.join(synthesis_result['personas'])}")
-    print(f"Steps completed: {synthesis_result['steps_completed']}")
+    if critique_result.get('critiques_complete'):
+        print("✅ All critiques completed!")
+        print(f"Domain: {critique_result['domain']}")
+        print(f"Personas: {', '.join(critique_result['personas'])}")
+        print(f"Total steps completed: {critique_result['steps_completed']}")
+        print("\nSynthesis format provided:")
+        print(critique_result.get('format', 'No format provided'))
+    else:
+        print("❌ Critiques not complete")
     
     print("\n✅ Test completed successfully!")
     return True

@@ -23,13 +23,11 @@ This implementation adapts RPT specifically for **reasoning validation and impro
 
 ## How It Works
 
-The Counter-Pose Reasoning Validator uses a session-based flow with intelligent persona selection:
+The Counter-Pose Reasoning Validator uses a streamlined 3-step session-based flow with intelligent persona selection:
 
-1. **Domain Detection**: Analyzes the reasoning text to automatically determine the most relevant domain (software development, digital marketing, visual design, or product strategy)
-2. **Intelligent Persona Ranking**: Uses keyword matching to rank persona pairs within the detected domain, recommending the most relevant experts for your specific reasoning
-3. **Persona Selection**: LLM chooses from ranked persona pair options (or can specify custom personas)
-4. **Multi-Perspective Critique**: Each selected persona provides detailed critique from their domain expertise
-5. **Synthesis & Validation**: Combines all perspectives to identify blind spots, contradictions, confidence level, and recommendations for improvement
+1. **Domain Detection & Persona Recommendation**: Analyzes the reasoning text to automatically determine the most relevant domain and rank persona pairs by relevance
+2. **Persona Guidance**: Provides specific guidance on how to perform critique from each selected persona's perspective
+3. **Batch Critique & Analysis**: Submit critiques from both personas simultaneously and receive complete analysis with synthesis format
 
 **Key Features:**
 
@@ -130,19 +128,18 @@ python tests/test_error_handling.py
 
 The server provides the following tools for a session-based reasoning validation flow:
 
-- `init_counter_pose`: Initialize a session and get ranked persona pair recommendations
-- `select_personas`: Choose which persona pair to use for critique
-- `submit_critique`: Submit critiques from each selected persona
-- `submit_synthesis`: Submit the final synthesis of all perspectives
+- `submit_reasoning`: Submit reasoning for analysis and get ranked persona pair recommendations
+- `get_persona_guidance`: Get guidance on how to perform critique with selected personas
+- `submit_critique`: Submit critiques from both personas with explicit parameters (persona1_name, persona1_critique, persona2_name, persona2_critique)
 
 ## Example Usage Flow
 
-Here's an example of the complete reasoning validation flow:
+Here's an example of the streamlined 3-step reasoning validation flow:
 
-### Step 1: Initialize Session
+### Step 1: Submit Reasoning
 
 ```json
-// Call: init_counter_pose
+// Call: submit_reasoning
 {
   "reasoning": "I need to implement authentication for our web application. I think we should use JWT tokens since they are stateless and work well with modern frontend frameworks. We can set the expiration time to 24 hours and store the tokens in local storage. This approach will be easy to implement and maintain."
 }
@@ -162,42 +159,34 @@ Response:
       "recommended": true
     }
   ],
-  "next_step": "select_personas"
+  "next_step": "get_persona_guidance"
 }
 ```
 
-### Step 2: Select Personas
+### Step 2: Get Persona Guidance
 
 ```json
-// Call: select_personas
+// Call: get_persona_guidance
 {
   "session_id": "uuid-here",
   "persona_pair": ["Developer", "Security Expert"]
 }
 ```
 
-### Step 3: Submit Critiques
+### Step 3: Submit Critiques (Both Personas)
 
 ```json
-// Call: submit_critique (for each persona)
+// Call: submit_critique (explicit parameters for both personas)
 {
   "session_id": "uuid-here",
-  "persona": "Developer",
-  "critique": "The approach has technical limitations..."
+  "persona1_name": "Developer",
+  "persona1_critique": "The approach has technical limitations...",
+  "persona2_name": "Security Expert",
+  "persona2_critique": "There are serious security vulnerabilities..."
 }
 ```
 
-### Step 4: Submit Synthesis
-
-```json
-// Call: submit_synthesis
-{
-  "session_id": "uuid-here",
-  "synthesis": "After considering both perspectives, significant security improvements are needed..."
-}
-```
-
-Final response includes confidence assessment, blind spots identified, and recommendations for improvement.
+Response includes synthesis format guidance for the calling LLM to complete the analysis.
 
 ## Validation Output Format
 
@@ -209,14 +198,9 @@ The final synthesis provides structured validation results:
   "domain": "software_development",
   "personas": ["Developer", "Security Expert"],
   "steps_completed": 3,
-  "complete": true,
-  "confidence": "Low|Medium|High",
-  "changes_needed": true,
-  "session_summary": {
-    "blind_spots": ["XSS vulnerability", "No token refresh", "..."],
-    "contradictions": ["..."],
-    "recommendations": ["Use HttpOnly cookies", "Implement HTTPS", "..."]
-  }
+  "critiques_complete": true,
+  "next_step": "synthesis",
+  "format": "<Synthesis format guidance for the calling LLM>"
 }
 ```
 
@@ -233,10 +217,11 @@ The final synthesis provides structured validation results:
 This tool is designed to be integrated with reasoning LLMs as an external validation service:
 
 1. **Initial Reasoning**: LLM receives a query and generates initial reasoning
-2. **Validation Request**: LLM sends reasoning to Counter-Pose MCP server for validation
-3. **Expert Analysis**: Counter-Pose returns structured critique and recommendations
-4. **Reasoning Refinement**: LLM reviews feedback and decides whether to revise its approach
-5. **Improved Response**: LLM provides final response to the user with enhanced confidence
+2. **Submit for Analysis**: LLM submits reasoning to Counter-Pose MCP server using `submit_reasoning`
+3. **Get Guidance**: System provides persona-specific guidance using `get_persona_guidance`
+4. **Generate & Submit Critiques**: LLM generates critiques from both persona perspectives and submits them using `submit_critique`
+5. **Synthesis**: LLM uses the provided synthesis format to generate final analysis
+6. **Reasoning Refinement**: LLM reviews the complete analysis and decides whether to revise its approach
 
 ### **Why Use MCP Server vs Direct RPT Prompting?**
 
